@@ -52,6 +52,37 @@ public class ContactService implements IContactService {
 
         }
 
-        return IdentifyResponseDTO.builder().build();
+        //contact exists
+        Contact primaryContact = contacts
+                .stream()
+                .filter(contact -> contact.getLinkPrecedence() == LinkPrecedence.PRIMARY)
+                .findFirst()
+                .orElse(contacts.getFirst());
+
+        List<String> emails = contacts.stream()
+                .map(Contact::getEmail)
+                .distinct()
+                .toList();
+
+        List<String> phones = contacts.stream()
+                .map(Contact::getPhoneNumber)
+                .distinct()
+                .toList();
+
+        List<Long> secondaryIds = contacts.stream()
+                .filter(contact -> contact.getLinkPrecedence() == LinkPrecedence.SECONDARY)
+                .map(Contact::getId)
+                .toList();
+
+        ContactResponseDTO contactResponse = ContactResponseDTO.builder()
+                .primaryContactId(primaryContact.getId())
+                .emails(emails)
+                .phoneNumbers(phones)
+                .secondaryContactIds(secondaryIds)
+                .build();
+
+        return IdentifyResponseDTO.builder()
+                .contact(contactResponse)
+                .build();
     }
 }
