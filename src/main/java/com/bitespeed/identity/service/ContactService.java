@@ -57,19 +57,48 @@ public class ContactService implements IContactService {
                 .stream()
                 .filter(contact -> contact.getLinkPrecedence() == LinkPrecedence.PRIMARY)
                 .findFirst()
-                .orElse(contacts.getFirst());
+                .orElseGet(() -> {
+                    Long primaryId = contacts.getFirst().getLinkedId();
+                    return contactRepository.findById(primaryId).orElseThrow();
+                });
 
-        List<String> emails = contacts.stream()
+        List<Contact> identityContacts =contactRepository.findByLinkedIdOrId(primaryContact.getId(), primaryContact.getId());
+
+
+        //Boolean for new info
+        boolean emailExists = identityContacts.stream()
+                .anyMatch(contact -> email != null  && email.equals(contact.getEmail()));
+
+        boolean phoneExists = identityContacts.stream()
+                .anyMatch(contact -> phone != null && phone.equals(contact.getPhoneNumber()));
+
+        //If New Info  detected
+        if(!phoneExists || !emailExists){
+            Contact secondaryContact = Contact.builder()
+                    .email(email)
+                    .phoneNumber(phone)
+                    .linkedId(primaryContact.getId())
+                    .linkPrecedence(LinkPrecedence.SECONDARY)
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
+                    .build();
+
+            Contact savedSecondary = contactRepository.save(secondaryContact);
+
+            identityContacts.add(savedSecondary);
+        }
+
+        List<String> emails = identityContacts.stream()
                 .map(Contact::getEmail)
                 .distinct()
                 .toList();
 
-        List<String> phones = contacts.stream()
+        List<String> phones = identityContacts.stream()
                 .map(Contact::getPhoneNumber)
                 .distinct()
                 .toList();
 
-        List<Long> secondaryIds = contacts.stream()
+        List<Long> secondaryIds = identityContacts.stream()
                 .filter(contact -> contact.getLinkPrecedence() == LinkPrecedence.SECONDARY)
                 .map(Contact::getId)
                 .toList();
@@ -80,6 +109,7 @@ public class ContactService implements IContactService {
                 .phoneNumbers(phones)
                 .secondaryContactIds(secondaryIds)
                 .build();
+
 
         return IdentifyResponseDTO.builder()
                 .contact(contactResponse)
