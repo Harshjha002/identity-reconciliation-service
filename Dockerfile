@@ -7,4 +7,7 @@ COPY . .
 RUN chmod +x gradlew
 RUN ./gradlew build -x test
 
-CMD java -jar build/libs/identity-reconciliation-service-0.0.1-SNAPSHOT.jar
+# Rename jar to app.jar
+RUN mv build/libs/*.jar app.jar
+
+CMD ["java", "-jar", "app.jar"]
