@@ -9,7 +9,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class IdentityReconciliationApplication {
 
 	public static void main(String[] args) {
-		Dotenv dotenv = Dotenv.configure().load();
+		Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
 		dotenv.entries().forEach( (DotenvEntry entry) -> System.setProperty(entry.getKey(), entry.getValue()));
 
 		SpringApplication.run(IdentityReconciliationApplication.class, args);
