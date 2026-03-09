@@ -64,7 +64,25 @@ public class ContactService implements IContactService {
 
         List<Contact> identityContacts =contactRepository.findByLinkedIdOrId(primaryContact.getId(), primaryContact.getId());
 
+        List<Contact> primaryContacts = contacts.stream().filter(contact -> contact.getLinkPrecedence() == LinkPrecedence.PRIMARY).toList();
 
+        if(primaryContacts.size() > 1){
+            Contact oldestPrimary = primaryContacts.stream()
+                    .min((c1, c2) -> c1.getCreatedAt().compareTo(c2.getCreatedAt()))
+                    .orElse(null);
+
+            for (Contact contact : primaryContacts){
+                if(!contact.getId().equals(oldestPrimary.getId())){
+                    contact.setLinkPrecedence(LinkPrecedence.SECONDARY);
+                    contact.setLinkedId(oldestPrimary.getId());
+
+                    contact.setUpdatedAt(LocalDateTime.now());
+                    contactRepository.save(contact);
+                }
+            }
+
+            primaryContact = oldestPrimary;
+        }
         //Boolean for new info
         boolean emailExists = identityContacts.stream()
                 .anyMatch(contact -> email != null  && email.equals(contact.getEmail()));
